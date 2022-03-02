@@ -1,41 +1,43 @@
-package main
+package sm_report
 
 import (
+	"fmt"
 	"github.com/Acidic9/go-steam/steamapi"
 	"github.com/Acidic9/go-steam/steamid"
-	"github.com/patrickmn/go-cache"
+	"github.com/fanjindong/go-cache"
+	"github.com/r4g3baby/sm-report/config"
 	"strconv"
 	"time"
 )
 
-type SteamUser struct {
+type steamUser struct {
 	SteamID    steamid.ID64
 	Name       string
 	AvatarURL  string
 	ProfileURL string
 }
 
-var userCache = cache.New(12*time.Hour, 1*time.Hour)
+var userCache = cache.NewMemCache(cache.WithClearInterval(1 * time.Hour))
 
-func GetSteamUser(steamID uint64) (*SteamUser, error) {
+func getSteamUser(steamID uint64) (*steamUser, error) {
 	strID := strconv.FormatUint(steamID, 10)
 	if value, ok := userCache.Get(strID); ok {
-		return value.(*SteamUser), nil
+		return value.(*steamUser), nil
 	}
 
-	profile, err := steamapi.NewKey(config.SteamKey).GetSinglePlayerSummaries(steamID)
+	profile, err := steamapi.NewKey(config.Config.SteamKey).GetSinglePlayerSummaries(steamID)
 	if err != nil {
 		return nil, err
 	}
 
-	steamUser := &SteamUser{
+	steamUser := &steamUser{
 		SteamID:    steamid.NewID64(steamID),
 		Name:       profile.PersonaName,
 		AvatarURL:  profile.AvatarFull,
-		ProfileURL: profile.ProfileURL,
+		ProfileURL: fmt.Sprintf("https://steamcommunity.com/profiles/%s", strID),
 	}
 
-	userCache.Set(strID, steamUser, cache.DefaultExpiration)
+	userCache.Set(strID, steamUser, cache.WithEx(12*time.Hour))
 
 	return steamUser, nil
 }
