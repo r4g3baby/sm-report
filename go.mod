@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/Acidic9/go-steam v0.0.0-20180123160439-47418f6637e6
-	github.com/bwmarrin/discordgo v0.23.3-0.20220227163103-4b615bec361d
+	github.com/bwmarrin/discordgo v0.24.0
 	github.com/fanjindong/go-cache v0.0.4
 	github.com/go-co-op/gocron v1.13.0
 	github.com/knadh/koanf v1.4.0
