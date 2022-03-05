@@ -117,6 +117,99 @@ func init() {
 		}
 	}, once: true})
 
+	commands["reports"] = command{
+		command: &discordgo.ApplicationCommand{
+			Type:        discordgo.ChatApplicationCommand,
+			Description: "Interact with the reports system",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "view",
+					Description: "View a report",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionInteger,
+							Name:        "report",
+							Description: "Report ID",
+							Required:    true,
+						},
+					},
+				},
+			},
+		},
+		handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			var applicationCommandData = i.ApplicationCommandData().Options[0]
+			switch applicationCommandData.Name {
+			case "view":
+				if !isServerAdmin(i.Member) {
+					if err := simpleInteractionResponse(i.Interaction, "You must be an admin in order to use this command."); err != nil {
+						config.Logger.Errorw("failed to respond to interaction",
+							"error", err,
+						)
+					}
+					return
+				}
+
+				var report database.Report
+				if result := database.DB.Preload("Comments").First(&report, applicationCommandData.Options[0].UintValue()); result.Error != nil {
+					if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+						if err := simpleInteractionResponse(i.Interaction, "Report does not exist."); err != nil {
+							config.Logger.Errorw("failed to respond to interaction",
+								"error", err,
+							)
+						}
+					} else {
+						config.Logger.Errorw("failed to query database",
+							"error", result.Error,
+						)
+					}
+
+					return
+				}
+
+				serverConfig, ok := config.Config.Servers[report.Config]
+				if !ok {
+					config.Logger.Errorw("config does not exist",
+						"report", report.ID,
+						"config", report.Config,
+					)
+					return
+				}
+
+				if embed, err := getReportEmbed(report, serverConfig); err == nil {
+					var embeds = []*discordgo.MessageEmbed{embed}
+
+					if len(report.Comments) > 0 {
+						embeds = append(embeds, getCommentsEmbed(report))
+					}
+
+					if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Embeds: embeds,
+							Flags:  1 << 6,
+						},
+					}); err != nil {
+						config.Logger.Errorw("failed to respond to interaction",
+							"error", err,
+						)
+					}
+				} else {
+					config.Logger.Errorw("failed to create report embed",
+						"report", report.ID,
+						"error", err,
+					)
+				}
+			default:
+				if err := simpleInteractionResponse(i.Interaction, "Oops, something gone wrong.\nHol' up, you aren't supposed to see this message."); err != nil {
+					config.Logger.Errorw("failed to respond to interaction",
+						"error", err,
+					)
+				}
+			}
+		},
+	}
+
 	components["report_handle"] = func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		var report database.Report
 		query := "channel_id = ? AND message_id = ?"
@@ -787,42 +880,4 @@ func getReportButtons(report database.Report) []discordgo.MessageComponent {
 	return []discordgo.MessageComponent{
 		handleBtn, commentBtn, moreInfoBtn,
 	}
-}
-
-func canHandleReport(server config.Server, member *discordgo.Member) bool {
-	for _, mRole := range member.Roles {
-		for _, bRole := range config.Config.Admins.Roles {
-			if mRole == bRole {
-				return true
-			}
-		}
-
-		for _, sRole := range server.Mentions.Roles {
-			if mRole == sRole {
-				return true
-			}
-		}
-	}
-
-	for _, bUser := range config.Config.Admins.Users {
-		if bUser == member.User.ID {
-			return true
-		}
-	}
-	for _, sUser := range server.Mentions.Users {
-		if sUser == member.User.ID {
-			return true
-		}
-	}
-	return false
-}
-
-func simpleInteractionResponse(i *discordgo.Interaction, message string) error {
-	return session.InteractionRespond(i, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: message,
-			Flags:   1 << 6,
-		},
-	})
 }

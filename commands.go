@@ -19,21 +19,10 @@ var (
 
 func init() {
 	handlers = append(handlers, handler{f: func(s *discordgo.Session, _ *discordgo.Ready) {
-		if cmds, err := s.ApplicationCommands(config.Config.Bot.AppID, ""); err == nil {
-			for _, cmd := range cmds {
-				if err := s.ApplicationCommandDelete(config.Config.Bot.AppID, "", cmd.ID); err != nil {
-					config.Logger.Errorw("failed to delete application command",
-						"command", cmd.Name,
-						"error", err,
-					)
-				}
-			}
-		}
-
-		if cmds, err := s.ApplicationCommands(config.Config.Bot.AppID, ""); err == nil {
+		if cmds, err := s.ApplicationCommands(config.Config.Bot.AppID, config.Config.Bot.GuildID); err == nil {
 			for _, cmd := range cmds {
 				if _, ok := commands[cmd.Name]; !ok {
-					if err := s.ApplicationCommandDelete(config.Config.Bot.AppID, "", cmd.ID); err != nil {
+					if err := s.ApplicationCommandDelete(config.Config.Bot.AppID, config.Config.Bot.GuildID, cmd.ID); err != nil {
 						config.Logger.Errorw("failed to delete application command",
 							"command", cmd.Name,
 							"error", err,
@@ -49,7 +38,7 @@ func init() {
 
 		for name, cmd := range commands {
 			cmd.command.Name = name
-			if _, err := s.ApplicationCommandCreate(config.Config.Bot.AppID, "", cmd.command); err != nil {
+			if _, err := s.ApplicationCommandCreate(config.Config.Bot.AppID, config.Config.Bot.GuildID, cmd.command); err != nil {
 				config.Logger.Errorw("failed to create application command",
 					"command", cmd.command.Name,
 					"error", err,

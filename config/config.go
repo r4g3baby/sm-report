@@ -20,8 +20,9 @@ type (
 	}
 
 	bot struct {
-		Token string
-		AppID string
+		Token   string
+		AppID   string
+		GuildID string
 	}
 
 	Server struct {
