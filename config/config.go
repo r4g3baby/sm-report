@@ -55,11 +55,39 @@ func init() {
 		panic(fmt.Errorf("error loading default config: %w", err))
 	}
 
-	if err := k.Load(file.Provider("config.json"), json.Parser()); err != nil {
+	provider := file.Provider("config.json")
+	if err := k.Load(provider, json.Parser()); err != nil {
 		panic(fmt.Errorf("error loading config: %w", err))
 	}
 
 	if err := k.Unmarshal("", &Config); err != nil {
-		panic(fmt.Errorf("error unmarshaling config: %w", err))
+		panic(fmt.Errorf("error unmarshalling config: %w", err))
 	}
+
+	_ = provider.Watch(func(event interface{}, err error) {
+		if err != nil {
+			Logger.Errorw("got config file watcher error",
+				"error", err,
+			)
+			return
+		}
+
+		Logger.Info("config changed, reloading..")
+		if err := k.Load(provider, json.Parser()); err != nil {
+			Logger.Errorw("got error while loading config",
+				"error", err,
+			)
+			return
+		}
+
+		var c config
+		if err := k.Unmarshal("", &c); err != nil {
+			Logger.Errorw("got error while unmarshalling config",
+				"error", err,
+			)
+			return
+		}
+		Config = c
+		Logger.Info("config has been reloaded")
+	})
 }
