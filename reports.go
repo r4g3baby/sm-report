@@ -792,7 +792,7 @@ func getTargetMoreInfo(report database.Report) (*discordgo.MessageEmbed, error) 
 
 	return &discordgo.MessageEmbed{
 		Color: 0xc33131,
-		Title: "Target Information",
+		Title: "Reported Information",
 		URL:   steamUser.ProfileURL,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
 			URL: steamUser.AvatarURL,
