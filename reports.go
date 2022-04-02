@@ -747,6 +747,13 @@ func getClientMoreInfo(report database.Report) (*discordgo.MessageEmbed, error) 
 		}
 	}
 
+	var totalReports = verifiedReports + falsifiedReports
+	var verifiedPercent, falsifiedPercent = 0, 0
+	if totalReports > 0 {
+		verifiedPercent = (verifiedReports * 100) / totalReports
+		falsifiedPercent = (falsifiedReports * 100) / totalReports
+	}
+
 	return &discordgo.MessageEmbed{
 		Color: 0xc33131,
 		Title: "Reporter Information",
@@ -759,8 +766,8 @@ func getClientMoreInfo(report database.Report) (*discordgo.MessageEmbed, error) 
 			{Name: "SteamID", Value: steamUser.SteamID.ToID().String(), Inline: true},
 			{Name: "IP", Value: report.ClientIP, Inline: true},
 			{Name: "Filled Reports", Value: strconv.Itoa(len(clientReports)), Inline: true},
-			{Name: "Verified", Value: strconv.Itoa(verifiedReports), Inline: true},
-			{Name: "Falsified", Value: strconv.Itoa(falsifiedReports), Inline: true},
+			{Name: "Verified", Value: fmt.Sprintf("%d [%d%%]", verifiedReports, verifiedPercent), Inline: true},
+			{Name: "Falsified", Value: fmt.Sprintf("%d [%d%%]", falsifiedReports, falsifiedPercent), Inline: true},
 		},
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("Report #%d", report.ID),
@@ -790,6 +797,13 @@ func getTargetMoreInfo(report database.Report) (*discordgo.MessageEmbed, error) 
 		}
 	}
 
+	var totalReports = verifiedReports + falsifiedReports
+	var verifiedPercent, falsifiedPercent = 0, 0
+	if totalReports > 0 {
+		verifiedPercent = (verifiedReports * 100) / totalReports
+		falsifiedPercent = (falsifiedReports * 100) / totalReports
+	}
+
 	return &discordgo.MessageEmbed{
 		Color: 0xc33131,
 		Title: "Reported Information",
@@ -802,8 +816,8 @@ func getTargetMoreInfo(report database.Report) (*discordgo.MessageEmbed, error) 
 			{Name: "SteamID", Value: steamUser.SteamID.ToID().String(), Inline: true},
 			{Name: "IP", Value: report.TargetIP, Inline: true},
 			{Name: "Times Reported", Value: strconv.Itoa(len(targetReports)), Inline: true},
-			{Name: "Verified", Value: strconv.Itoa(verifiedReports), Inline: true},
-			{Name: "Falsified", Value: strconv.Itoa(falsifiedReports), Inline: true},
+			{Name: "Verified", Value: fmt.Sprintf("%d [%d%%]", verifiedReports, verifiedPercent), Inline: true},
+			{Name: "Falsified", Value: fmt.Sprintf("%d [%d%%]", falsifiedReports, falsifiedPercent), Inline: true},
 		},
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("Report #%d", report.ID),
