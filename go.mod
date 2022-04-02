@@ -1,6 +1,6 @@
 module github.com/r4g3baby/sm-report
 
-go 1.17
+go 1.18
 
 require (
 	github.com/Acidic9/go-steam v0.0.0-20180123160439-47418f6637e6
