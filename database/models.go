@@ -10,18 +10,18 @@ type (
 
 		Config string `gorm:"size:32;not null;default:default"`
 
-		ClientSteamID uint64 `gorm:"index;not null"`
-		ClientIP      string `gorm:"size:46;not null"`
-		TargetSteamID uint64 `gorm:"index"`
-		TargetIP      string `gorm:"size:46"`
+		ClientSteamID uint64  `gorm:"index;not null"`
+		ClientIP      string  `gorm:"size:46;not null"`
+		TargetSteamID *uint64 `gorm:"index"`
+		TargetIP      *string `gorm:"size:46"`
 
 		ServerIP string `gorm:"size:46;not null"`
 		Reason   string `gorm:"size:256;not null"`
 
-		AdminID   uint64 `gorm:"index"`
-		ChannelID uint64 `gorm:"index:idx_reports_message,unique"`
-		MessageID uint64 `gorm:"index:idx_reports_message,unique"`
-		Status    Status `gorm:"type:TINYINT UNSIGNED NOT NULL;default:0"`
+		AdminID   *uint64 `gorm:"index"`
+		ChannelID *uint64 `gorm:"index:idx_reports_message,unique"`
+		MessageID *uint64 `gorm:"index:idx_reports_message,unique"`
+		Status    Status  `gorm:"type:TINYINT UNSIGNED NOT NULL;default:0"`
 
 		Comments []Comment `gorm:"foreignKey:ReportID"`
 

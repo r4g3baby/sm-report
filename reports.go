@@ -15,7 +15,7 @@ import (
 
 func init() {
 	handlers = append(handlers, handler{f: func(s *discordgo.Session, _ *discordgo.Ready) {
-		if _, err := scheduler.Every(3).Seconds().SingletonMode().Do(func() {
+		if _, err := scheduler.CronWithSeconds("*/3 * * * * *").SingletonMode().StartImmediately().Do(func() {
 			var pendingReports []database.Report
 			if result := database.DB.Preload("Comments").Where("message_id IS NULL").Find(&pendingReports); result.Error != nil {
 				config.Logger.Errorw("failed to query database",
@@ -60,13 +60,13 @@ func init() {
 					return
 				}
 
-				channelID, _ := strconv.ParseInt(msg.ChannelID, 10, 64)
-				msgID, _ := strconv.ParseInt(msg.ID, 10, 64)
+				channelID, _ := strconv.ParseUint(msg.ChannelID, 10, 64)
+				messageID, _ := strconv.ParseUint(msg.ID, 10, 64)
 				if result := database.DB.Model(&report).Updates(database.Report{
-					ChannelID: uint64(channelID), MessageID: uint64(msgID),
+					ChannelID: &channelID, MessageID: &messageID,
 				}); result.Error != nil {
 					_ = s.ChannelMessageDelete(msg.ChannelID, msg.ID)
-					config.Logger.Errorw("failed to update report message id",
+					config.Logger.Errorw("failed to update report channel and message id",
 						"error", result.Error,
 					)
 				}
@@ -77,7 +77,7 @@ func init() {
 			)
 		}
 
-		if _, err := scheduler.Every(1).Hour().SingletonMode().Do(func() {
+		if _, err := scheduler.Cron("0 * * * *").SingletonMode().StartImmediately().Do(func() {
 			var pendingReports []database.Report
 			query := "message_id IS NOT NULL AND admin_id IS NULL AND status = ? AND DATEDIFF(current_time, created_at) >= 1"
 			if result := database.DB.Preload("Comments").Where(query, database.StatusUnknown).Find(&pendingReports); result.Error != nil {
@@ -237,7 +237,7 @@ func init() {
 			return
 		}
 
-		if report.AdminID != 0 {
+		if report.AdminID != nil {
 			// Handle button shouldn't be enabled, so we update the message to make sure
 			if err := updateReportMessage(report, serverConfig); err != nil {
 				config.Logger.Errorw("failed to update report message",
@@ -247,7 +247,7 @@ func init() {
 			}
 
 			var msg = "This report already belongs to someone else."
-			if strconv.FormatUint(report.AdminID, 10) == i.Member.User.ID {
+			if strconv.FormatUint(*report.AdminID, 10) == i.Member.User.ID {
 				msg = "This report already belongs to you."
 			}
 
@@ -268,8 +268,8 @@ func init() {
 			return
 		}
 
-		adminID, _ := strconv.ParseInt(i.Member.User.ID, 10, 64)
-		report.AdminID = uint64(adminID)
+		adminID, _ := strconv.ParseUint(i.Member.User.ID, 10, 64)
+		report.AdminID = &adminID
 
 		if result := database.DB.Model(&report).Updates(database.Report{AdminID: report.AdminID}); result.Error != nil {
 			config.Logger.Errorw("failed to update report admin id",
@@ -319,8 +319,8 @@ func init() {
 			return
 		}
 
-		if report.AdminID == 0 || strconv.FormatUint(report.AdminID, 10) != i.Member.User.ID {
-			// Update the report either way just because why not
+		if report.AdminID == nil || strconv.FormatUint(*report.AdminID, 10) != i.Member.User.ID {
+			// Update the report message either way just because why not
 			if err := updateReportMessage(report, serverConfig); err != nil {
 				config.Logger.Errorw("failed to update report message",
 					"report", report.ID,
@@ -385,8 +385,8 @@ func init() {
 			return
 		}
 
-		if report.AdminID == 0 || strconv.FormatUint(report.AdminID, 10) != i.Member.User.ID {
-			// Update the report either way just because why not
+		if report.AdminID == nil || strconv.FormatUint(*report.AdminID, 10) != i.Member.User.ID {
+			// Update the report message either way just because why not
 			if err := updateReportMessage(report, serverConfig); err != nil {
 				config.Logger.Errorw("failed to update report message",
 					"report", report.ID,
@@ -551,7 +551,7 @@ func init() {
 			return
 		}
 
-		// Update the report either way just because why not
+		// Update the report message either way just because why not
 		if err := updateReportMessage(report, serverConfig); err != nil {
 			config.Logger.Errorw("failed to update report message",
 				"report", report.ID,
@@ -570,7 +570,7 @@ func init() {
 			)
 		}
 
-		if report.TargetSteamID != 0 {
+		if report.TargetSteamID != nil {
 			if targetInfoEmbed, err := getTargetMoreInfo(report); err == nil {
 				embeds = append(embeds, targetInfoEmbed)
 			} else {
@@ -603,8 +603,8 @@ func updateReportMessage(report database.Report, serverConfig config.Server) err
 	if embed, err := getReportEmbed(report, serverConfig); err == nil {
 		var content = getReportMentions(serverConfig.Mentions)
 		if _, err := session.ChannelMessageEditComplex(&discordgo.MessageEdit{
-			Channel: strconv.FormatUint(report.ChannelID, 10),
-			ID:      strconv.FormatUint(report.MessageID, 10),
+			Channel: strconv.FormatUint(*report.ChannelID, 10),
+			ID:      strconv.FormatUint(*report.MessageID, 10),
 			Content: &content,
 			Embed:   embed,
 			Components: []discordgo.MessageComponent{
@@ -636,7 +636,7 @@ func getReportMentions(mentions config.Mentions) string {
 }
 
 func getReportEmbed(report database.Report, server config.Server) (*discordgo.MessageEmbed, error) {
-	if report.TargetSteamID != 0 {
+	if report.TargetSteamID != nil {
 		return userReportEmbed(report, server)
 	}
 	return serverReportEmbed(report, server)
@@ -648,7 +648,7 @@ func userReportEmbed(report database.Report, server config.Server) (*discordgo.M
 		return nil, err
 	}
 
-	target, err := getSteamUser(report.TargetSteamID)
+	target, err := getSteamUser(*report.TargetSteamID)
 	if err != nil {
 		return nil, err
 	}
@@ -656,7 +656,7 @@ func userReportEmbed(report database.Report, server config.Server) (*discordgo.M
 	var admin = "Press the **handle** button."
 	if report.Status == database.StatusAutoClosed {
 		admin = "None"
-	} else if report.AdminID != 0 {
+	} else if report.AdminID != nil {
 		admin = fmt.Sprintf("<@%d>", report.AdminID)
 	}
 
@@ -675,7 +675,7 @@ func userReportEmbed(report database.Report, server config.Server) (*discordgo.M
 		Description: fmt.Sprintf("```%s```", report.Reason),
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Reported SteamID", Value: target.SteamID.ToID().String(), Inline: true},
-			{Name: "Reported IP", Value: report.TargetIP, Inline: true},
+			{Name: "Reported IP", Value: *report.TargetIP, Inline: true},
 			{Name: "Comments", Value: strconv.Itoa(len(report.Comments)), Inline: true},
 			{Name: "Admin Handling Report", Value: admin, Inline: true},
 			{Name: "Status", Value: report.Status.String(), Inline: true},
@@ -697,7 +697,7 @@ func serverReportEmbed(report database.Report, server config.Server) (*discordgo
 	var admin = "Press the **handle** button."
 	if report.Status == database.StatusAutoClosed {
 		admin = "None"
-	} else if report.AdminID != 0 {
+	} else if report.AdminID != nil {
 		admin = fmt.Sprintf("<@%d>", report.AdminID)
 	}
 
@@ -777,7 +777,7 @@ func getClientMoreInfo(report database.Report) (*discordgo.MessageEmbed, error) 
 }
 
 func getTargetMoreInfo(report database.Report) (*discordgo.MessageEmbed, error) {
-	steamUser, err := getSteamUser(report.TargetSteamID)
+	steamUser, err := getSteamUser(*report.TargetSteamID)
 	if err != nil {
 		return nil, err
 	}
@@ -814,7 +814,7 @@ func getTargetMoreInfo(report database.Report) (*discordgo.MessageEmbed, error) 
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Name", Value: steamUser.Name, Inline: true},
 			{Name: "SteamID", Value: steamUser.SteamID.ToID().String(), Inline: true},
-			{Name: "IP", Value: report.TargetIP, Inline: true},
+			{Name: "IP", Value: *report.TargetIP, Inline: true},
 			{Name: "Times Reported", Value: strconv.Itoa(len(targetReports)), Inline: true},
 			{Name: "Verified", Value: fmt.Sprintf("%d [%d%%]", verifiedReports, verifiedPercent), Inline: true},
 			{Name: "Falsified", Value: fmt.Sprintf("%d [%d%%]", falsifiedReports, falsifiedPercent), Inline: true},
@@ -879,7 +879,7 @@ func getReportButtons(report database.Report) []discordgo.MessageComponent {
 		}
 	}
 
-	if report.AdminID != 0 {
+	if report.AdminID != nil {
 		if report.Status == database.StatusUnknown {
 			return []discordgo.MessageComponent{
 				verifyBtn, falsifyBtn, commentBtn, moreInfoBtn,
