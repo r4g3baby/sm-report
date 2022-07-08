@@ -5,13 +5,13 @@ go 1.18
 require (
 	github.com/Acidic9/go-steam v0.0.0-20180123160439-47418f6637e6
 	github.com/bwmarrin/discordgo v0.25.0
-	github.com/fanjindong/go-cache v0.0.4
-	github.com/go-co-op/gocron v1.13.0
-	github.com/knadh/koanf v1.4.1
+	github.com/fanjindong/go-cache v0.0.5
+	github.com/go-co-op/gocron v1.15.0
+	github.com/knadh/koanf v1.4.2
 	go.uber.org/zap v1.21.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gorm.io/driver/mysql v1.3.4
-	gorm.io/gorm v1.23.5
+	gorm.io/gorm v1.23.8
 )
 
 require (
@@ -27,7 +27,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.0.0-20220708085239-5a0f0661e09d // indirect
 )
