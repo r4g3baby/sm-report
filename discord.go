@@ -70,7 +70,9 @@ func StartBot() {
 
 	scheduler.StartAsync()
 
-	config.Logger.Infof("%s bot is now running", session.State.User.Username)
+	config.Logger.Infow("bot is now running",
+		"username", session.State.User.Username,
+	)
 }
 
 func ShutdownBot() {
