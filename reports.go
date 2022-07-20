@@ -657,7 +657,7 @@ func userReportEmbed(report database.Report, server config.Server) (*discordgo.M
 	if report.Status == database.StatusAutoClosed {
 		admin = "None"
 	} else if report.AdminID != nil {
-		admin = fmt.Sprintf("<@%d>", report.AdminID)
+		admin = fmt.Sprintf("<@%d>", *report.AdminID)
 	}
 
 	return &discordgo.MessageEmbed{
@@ -698,7 +698,7 @@ func serverReportEmbed(report database.Report, server config.Server) (*discordgo
 	if report.Status == database.StatusAutoClosed {
 		admin = "None"
 	} else if report.AdminID != nil {
-		admin = fmt.Sprintf("<@%d>", report.AdminID)
+		admin = fmt.Sprintf("<@%d>", *report.AdminID)
 	}
 
 	return &discordgo.MessageEmbed{
